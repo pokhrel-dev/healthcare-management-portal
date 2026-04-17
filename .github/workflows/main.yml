@@ -2,14 +2,14 @@ name: Hospital Management CI/CD
 
 on:
   push:
-    branches: [ master ]  # Changed from 'main' to 'master'
+    branches: [ master ] # Execution: Triggers on every push to your master branch
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
     services:
-      # Execution: Spins up a temporary PostgreSQL database for testing
+      # Execution: Temporary PostgreSQL instance for the migration check
       postgres:
         image: postgres:15
         env:
@@ -18,6 +18,12 @@ jobs:
           POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
+      # Execution: Ensuring the DB is ready before backend steps run
+      options: >-
+        --health-cmd pg_isready
+        --health-interval 10s
+        --health-timeout 5s
+        --health-retries 5
 
     steps:
       - name: Checkout Code
@@ -31,12 +37,15 @@ jobs:
       - name: Install Backend Dependencies
         run: |
           cd backend
-          pip install -r requirements.txt
+          pip install -r requirements.txt # Execution: Installs Django and PostgreSQL drivers
 
       - name: Run Django Migrations
+        env:
+          # Execution: Pointing Django to the temporary CI database
+          DATABASE_URL: postgres://user:password@localhost:5432/hospital_db
         run: |
-          cd backend
-          python manage.py migrate # Execution: Verifies the schema builds correctly
+          cd backend/core
+          python manage.py migrate # Execution: Verifies your models.py schema is valid
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
@@ -46,9 +55,9 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd frontend
-          npm install
+          npm install --legacy-peer-deps # Execution: Fixes common dependency conflicts in CI
 
       - name: Build Frontend
         run: |
           cd frontend
-          npm run build # Execution: Compiles the React app for production
+          npm run build # Execution: Compiles React for production to catch syntax errors
