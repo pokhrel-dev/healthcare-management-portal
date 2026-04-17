@@ -1,0 +1,54 @@
+name: Hospital Management CI/CD
+
+on:
+  push:
+    branches: [ main ] # Execution: Triggers the pipeline on every push to 'main'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      # Execution: Spins up a temporary PostgreSQL database for testing
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: hospital_db
+          POSTGRES_USER: user
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+
+      - name: Run Django Migrations
+        run: |
+          cd backend
+          python manage.py migrate # Execution: Verifies the schema builds correctly
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build # Execution: Compiles the React app for production
