@@ -2,7 +2,7 @@ name: Hospital Management CI/CD
 
 on:
   push:
-    branches: [ main ] # Execution: Triggers the pipeline on every push to 'main'
+    branches: [ master ]  # Changed from 'main' to 'master'
 
 jobs:
   build-and-test:
