@@ -39,13 +39,13 @@ jobs:
           cd backend
           pip install -r requirements.txt # Execution: Installs Django and PostgreSQL drivers
 
-      - name: Run Django Migrations
+      - - name: Run Django Migrations
         env:
-          # Execution: Pointing Django to the temporary CI database
+          # Change "db" to "localhost" to match the GitHub service mapping
           DATABASE_URL: postgres://user:password@localhost:5432/hospital_db
         run: |
           cd backend/core
-          python manage.py migrate # Execution: Verifies your models.py schema is valid
+          python manage.py migrate
 
       - name: Set up Node.js
         uses: actions/setup-node@v3
