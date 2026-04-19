@@ -1,8 +1,8 @@
-name: Hospital Management CI/CD
+name: Healthcare Management Portal CI/CD
 
 on:
   push:
-    branches: [ master ] # Execution: Triggers on every push to your master branch
+    branches: [ master ]
 
 jobs:
   build-and-test:
@@ -12,12 +12,11 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_DB: hospital_db
+          POSTGRES_DB: healthcare_test_db
           POSTGRES_USER: user
           POSTGRES_PASSWORD: password
         ports:
           - 5432:5432
-        # Execution: These flags must be on a single line under 'options'
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -36,14 +35,17 @@ jobs:
       - name: Install Backend Dependencies
         run: |
           cd backend
-          pip install -r requirements.txt # Execution: Installs Django and PostgreSQL drivers
+          pip install -r requirements.txt
 
-      - name: Run Django Migrations
+      - name: Test Local Migrations (CI Safety Check)
         env:
-          # Change "db" to "localhost" to match the GitHub service mapping
-          DATABASE_URL: postgres://user:password@localhost:5432/hospital_db
+          DB_NAME: healthcare_test_db
+          DB_USER: user
+          DB_PASSWORD: password
+          DB_HOST: localhost
+          DB_PORT: 5432
         run: |
-          cd backend/core
+          cd backend
           python manage.py migrate
 
       - name: Set up Node.js
@@ -54,9 +56,20 @@ jobs:
       - name: Install Frontend Dependencies
         run: |
           cd frontend
-          npm install --legacy-peer-deps # Execution: Fixes common dependency conflicts in CI
+          npm install --legacy-peer-deps
 
       - name: Build Frontend
         run: |
           cd frontend
-          CI=false npm run build # Execution: Prevents warnings from failing the build
+          CI=false npm run build
+
+      - name: "DEPLOY: Sync Healthcare Portal AWS RDS"
+        run: |
+          cd backend
+          python manage.py migrate
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_PORT: 5432
