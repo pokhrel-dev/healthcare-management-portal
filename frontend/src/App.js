@@ -12,7 +12,6 @@ function HospitalPortal() {
   const [isRegistering, setIsRegistering] = useState(false);
 
   useEffect(() => {
-    // Fetch doctors for the dropdown and name lookup
     fetch('http://localhost:8000/appointments/doctors/')
       .then(res => res.json())
       .then(data => setDoctors(data));
@@ -35,9 +34,11 @@ function HospitalPortal() {
       setMessage({ text: 'User not found. Please register.', type: 'error' });
       return;
     }
+    
     setIsLoggedIn(true);
     setCurrentPatient(existing);
-    setPatientName('');
+    setPatientName(''); // CLEAR DETAILS: Prepares login for next patient
+    setMessage({ text: '', type: '' }); // Clear any previous error messages
   };
 
   const handleSignUp = async (e) => {
@@ -51,6 +52,7 @@ function HospitalPortal() {
 
       if (response.ok) {
         setMessage({ text: 'Success! You can now Sign In.', type: 'success' });
+        setPatientName(''); // Clear name after successful registration
         setIsRegistering(false);
       } else {
         const errorData = await response.json();
@@ -80,23 +82,42 @@ function HospitalPortal() {
     }
   };
 
+  // CANCEL BUTTON LOGIC
+  const cancelAppointment = async (id) => {
+    if (window.confirm("Are you sure you want to cancel this appointment?")) {
+      const response = await fetch(`http://localhost:8000/appointments/book/${id}/`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setMessage({ text: 'Appointment successfully cancelled.', type: 'success' });
+        // Update local state to remove the item immediately
+        setAppointments(appointments.filter(app => app.id !== id));
+      } else {
+        setMessage({ text: 'Failed to cancel appointment. Check backend permissions.', type: 'error' });
+      }
+    }
+  };
+
   return (
     <div style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1600&q=80")', backgroundSize: 'cover', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
       {!isLoggedIn ? (
         <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '8px', width: '400px', textAlign: 'center' }}>
-          <h2>{isRegistering ? 'New Patient' : 'Health Care Portal'}</h2>
+          <h2>{isRegistering ? 'New Patient Registration' : 'Health Care Portal'}</h2>
           {message.text && <p style={{ color: message.type === 'success' ? 'green' : 'red' }}>{message.text}</p>}
           <form onSubmit={isRegistering ? handleSignUp : handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <input placeholder="Full Name" value={patientName} onChange={(e) => setPatientName(e.target.value)} style={{ padding: '10px' }} required />
-            <button type="submit" style={{ backgroundColor: '#003366', color: 'white', padding: '12px', cursor: 'pointer' }}>{isRegistering ? 'REGISTER' : 'SIGN IN'}</button>
+            <button type="submit" style={{ backgroundColor: '#003366', color: 'white', padding: '12px', cursor: 'pointer', border: 'none', borderRadius: '4px' }}>{isRegistering ? 'REGISTER' : 'SIGN IN'}</button>
           </form>
-          <button onClick={() => setIsRegistering(!isRegistering)} style={{ marginTop: '10px', background: 'none', border: 'none', color: '#003366', cursor: 'pointer' }}>{isRegistering ? 'Back to Login' : 'Create Account'}</button>
+          <button onClick={() => setIsRegistering(!isRegistering)} style={{ marginTop: '10px', background: 'none', border: 'none', color: '#003366', cursor: 'pointer' }}>{isRegistering ? 'Already have an account? Sign In' : 'Need an account? Create one'}</button>
         </div>
       ) : (
-        <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '8px', width: '90%', maxWidth: '900px' }}>
-          <h2>Welcome, {currentPatient?.name} <button onClick={() => setIsLoggedIn(false)} style={{ float: 'right' }}>Logout</button></h2>
+        <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '8px', width: '90%', maxWidth: '1000px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+          <h2>Welcome, {currentPatient?.name} <button onClick={() => setIsLoggedIn(false)} style={{ float: 'right', padding: '5px 10px', cursor: 'pointer' }}>Logout</button></h2>
           
-          <div style={{ padding: '20px', backgroundColor: '#f9f9f9', border: '1px solid #ddd', marginBottom: '20px' }}>
+          {message.text && <p style={{ color: message.type === 'success' ? 'green' : 'red', fontWeight: 'bold' }}>{message.text}</p>}
+
+          <div style={{ padding: '20px', backgroundColor: '#f9f9f9', border: '1px solid #ddd', marginBottom: '20px', borderRadius: '4px' }}>
             <h3>Schedule New Appointment</h3>
             <form onSubmit={bookAppointment} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <select value={selectedDoctor} onChange={(e) => setSelectedDoctor(e.target.value)} style={{ flex: '1', padding: '10px' }} required>
@@ -104,7 +125,7 @@ function HospitalPortal() {
                 {doctors.map(doc => <option key={doc.id} value={doc.id}>Dr. {doc.name}</option>)}
               </select>
               <input type="datetime-local" value={appointmentDate} onChange={(e) => setAppointmentDate(e.target.value)} style={{ flex: '1', padding: '10px' }} required />
-              <button type="submit" style={{ backgroundColor: '#003366', color: 'white', padding: '10px 20px' }}>Confirm</button>
+              <button type="submit" style={{ backgroundColor: '#003366', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Confirm Booking</button>
             </form>
           </div>
 
@@ -113,8 +134,9 @@ function HospitalPortal() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ backgroundColor: '#eee' }}>
-                  <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Doctor Name</th>
-                  <th style={{ padding: '10px', border: '1px solid #ddd', textAlign: 'left' }}>Date & Time</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Doctor Name</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'left' }}>Date & Time</th>
+                  <th style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,15 +144,18 @@ function HospitalPortal() {
                   .filter(app => app.patient_name === currentPatient?.name)
                   .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date))
                   .map((app, index) => {
-                    // Senior Logic: Find the doctor name from the doctors array using the ID
                     const doctor = doctors.find(d => d.id === parseInt(app.doctor));
                     return (
                       <tr key={index}>
-                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-                          {doctor ? `Dr. ${doctor.name}` : `ID: ${app.doctor}`}
-                        </td>
-                        <td style={{ padding: '10px', border: '1px solid #ddd' }}>
-                          {new Date(app.appointment_date).toLocaleString()}
+                        <td style={{ padding: '12px', border: '1px solid #ddd' }}>{doctor ? `Dr. ${doctor.name}` : `ID: ${app.doctor}`}</td>
+                        <td style={{ padding: '12px', border: '1px solid #ddd' }}>{new Date(app.appointment_date).toLocaleString()}</td>
+                        <td style={{ padding: '12px', border: '1px solid #ddd', textAlign: 'center' }}>
+                          <button 
+                            onClick={() => cancelAppointment(app.id)} 
+                            style={{ backgroundColor: '#d9534f', color: 'white', border: 'none', padding: '6px 12px', cursor: 'pointer', borderRadius: '4px' }}
+                          >
+                            Cancel
+                          </button>
                         </td>
                       </tr>
                     );
@@ -138,7 +163,7 @@ function HospitalPortal() {
               </tbody>
             </table>
             {appointments.filter(app => app.patient_name === currentPatient?.name).length === 0 && (
-              <p style={{ textAlign: 'center', marginTop: '10px' }}>No appointments found for your account.</p>
+              <p style={{ textAlign: 'center', marginTop: '20px', color: '#666' }}>You have no scheduled appointments.</p>
             )}
           </div>
         </div>
