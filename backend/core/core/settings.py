@@ -57,8 +57,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres', 
         'USER': 'postgres', 
-        'PASSWORD': 'your_actual_aws_password', # Replace with the password you used in AWS
-        'HOST': 'your-rds-endpoint.xxxx.us-east-1.rds.amazonaws.com', # Use ONLY the endpoint URL here
+        'PASSWORD': 'YOUR_AWS_DB_PASSWORD', # Use your actual AWS DB password here
+        'HOST': 'hmp-prod-db.c4r8qswuinow.us-east-1.rds.amazonaws.com', 
         'PORT': '5432',
         'OPTIONS': {
             'sslmode': 'verify-full',
