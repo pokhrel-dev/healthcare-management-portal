@@ -51,16 +51,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Professional Dynamic Database Config
+# Updated for AWS RDS Connection
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'postgres'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        # FIXED: Added 'postgres' as default to match your Docker setup
-        'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'), 
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+        'NAME': 'postgres', # Or your specific DB name
+        'USER': 'postgres', # Or your AWS Master Username
+        'PASSWORD': 'your_aws_db_password', # Replace with your actual password
+        'HOST': 'your-rds-endpoint.xxxxx.us-east-1.rds.amazonaws.com', # GET THIS FROM AWS PORTAL
+        'PORT': '5432',
     }
 }
 
