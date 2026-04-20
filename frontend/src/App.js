@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from './api'; // Ensure you created the api.js file in src/
+import api from './api';
 
 function HealthcareManagementPortal() {
   const [patientName, setPatientName] = useState('');
@@ -11,8 +11,8 @@ function HealthcareManagementPortal() {
   const [message, setMessage] = useState({ text: '', type: '' });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPatient, setCurrentPatient] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
-  // Load Initial Data
   useEffect(() => {
     const init = async () => {
       try {
@@ -41,7 +41,6 @@ function HealthcareManagementPortal() {
     }
   };
 
-  // 🔐 Sign In Logic
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -49,21 +48,33 @@ function HealthcareManagementPortal() {
         username: patientName, 
         password: password 
       });
+      localStorage.setItem('accessToken', response.data.access);
+      localStorage.setItem('refreshToken', response.data.refresh);
+      localStorage.setItem('userName', patientName);
+      setIsLoggedIn(true);
+      setCurrentPatient({ name: patientName });
+      setPatientName('');
+      setPassword('');
+      fetchAppointments();
+      setMessage({ text: 'Logged in successfully!', type: 'success' });
+    } catch (err) {
+      setMessage({ text: 'Invalid credentials.', type: 'error' });
+    }
+  };
 
-      if (response.status === 200) {
-        localStorage.setItem('accessToken', response.data.access);
-        localStorage.setItem('refreshToken', response.data.refresh);
-        localStorage.setItem('userName', patientName);
-        
-        setIsLoggedIn(true);
-        setCurrentPatient({ name: patientName });
-        setPatientName('');
-        setPassword('');
-        fetchAppointments();
-        setMessage({ text: 'Logged in successfully!', type: 'success' });
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await api.post('/appointments/patients/', { 
+        name: patientName, 
+        password: password 
+      });
+      if (response.status === 201) {
+        setMessage({ text: 'Registration successful! Please sign in.', type: 'success' });
+        setIsRegistering(false);
       }
     } catch (err) {
-      setMessage({ text: 'Invalid credentials. Please try again.', type: 'error' });
+      setMessage({ text: 'Registration failed. Try a different username.', type: 'error' });
     }
   };
 
@@ -74,21 +85,17 @@ function HealthcareManagementPortal() {
     setAppointments([]);
   };
 
-  // 📝 Create Appointment Logic
   const bookAppointment = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.post('/appointments/book/', { 
+      await api.post('/appointments/book/', { 
         patient_name: currentPatient.name, 
         doctor: selectedDoctor,
         appointment_date: appointmentDate 
       });
-      
-      if (response.status === 201 || response.status === 200) {
-        setMessage({ text: 'Appointment Scheduled!', type: 'success' });
-        setAppointmentDate('');
-        fetchAppointments();
-      }
+      setMessage({ text: 'Appointment Scheduled!', type: 'success' });
+      setAppointmentDate('');
+      fetchAppointments();
     } catch (err) {
       setMessage({ text: 'Failed to book appointment.', type: 'error' });
     }
@@ -98,7 +105,6 @@ function HealthcareManagementPortal() {
     if (window.confirm("Cancel this appointment?")) {
       try {
         await api.delete(`/appointments/book/${id}/`);
-        setMessage({ text: 'Cancelled successfully.', type: 'success' });
         fetchAppointments();
       } catch (err) {
         setMessage({ text: 'Cancellation failed.', type: 'error' });
@@ -106,25 +112,27 @@ function HealthcareManagementPortal() {
     }
   };
 
-  // UI RENDER
   return (
     <div style={{ backgroundImage: 'url("https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1600&q=80")', backgroundSize: 'cover', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', fontFamily: 'Arial, sans-serif' }}>
       {!isLoggedIn ? (
         <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '8px', width: '400px', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
-          <h2 style={{ color: '#003366' }}>Healthcare Portal Login</h2>
+          <h2 style={{ color: '#003366' }}>{isRegistering ? 'Register New Patient' : 'Healthcare Portal Login'}</h2>
           {message.text && <p style={{ color: message.type === 'success' ? 'green' : 'red' }}>{message.text}</p>}
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <form onSubmit={isRegistering ? handleRegister : handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <input placeholder="Username" value={patientName} onChange={(e) => setPatientName(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
             <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} style={{ padding: '12px', borderRadius: '4px', border: '1px solid #ccc' }} required />
-            <button type="submit" style={{ backgroundColor: '#003366', color: 'white', padding: '12px', cursor: 'pointer', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>SIGN IN</button>
+            <button type="submit" style={{ backgroundColor: '#003366', color: 'white', padding: '12px', cursor: 'pointer', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
+              {isRegistering ? 'REGISTER' : 'SIGN IN'}
+            </button>
           </form>
+          <p onClick={() => setIsRegistering(!isRegistering)} style={{ cursor: 'pointer', color: '#003366', marginTop: '15px', textDecoration: 'underline' }}>
+            {isRegistering ? 'Already have an account? Sign In' : 'New Patient? Register Here'}
+          </p>
         </div>
       ) : (
         <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '8px', width: '90%', maxWidth: '1000px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
           <h2 style={{ color: '#003366' }}>Welcome, {currentPatient?.name}! <button onClick={handleLogout} style={{ float: 'right', padding: '8px 15px', cursor: 'pointer', backgroundColor: '#f4f4f4', border: '1px solid #ccc', borderRadius: '4px' }}>Logout</button></h2>
-          
           {message.text && <p style={{ color: message.type === 'success' ? 'green' : 'red', fontWeight: 'bold' }}>{message.text}</p>}
-
           <div style={{ padding: '20px', backgroundColor: '#f9f9f9', border: '1px solid #ddd', marginBottom: '20px', borderRadius: '4px' }}>
             <h3>Schedule New Appointment</h3>
             <form onSubmit={bookAppointment} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -136,7 +144,6 @@ function HealthcareManagementPortal() {
               <button type="submit" style={{ backgroundColor: '#003366', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Confirm Booking</button>
             </form>
           </div>
-
           <div style={{ marginTop: '20px' }}>
             <h3>Your Scheduled Appointments</h3>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
