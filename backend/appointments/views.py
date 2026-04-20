@@ -1,13 +1,25 @@
-from rest_framework import generics, viewsets, status # Added status
-from rest_framework.response import Response # Recommended for custom create
-from django.contrib.auth.models import User # CRITICAL MISSING IMPORT
+from rest_framework import generics, viewsets, status
+from rest_framework.response import Response 
+from django.contrib.auth.models import User 
 from .models import Doctor, Appointment, Patient
 from .serializers import DoctorSerializer, AppointmentSerializer, PatientSerializer
 from rest_framework.permissions import AllowAny
 
-# ... [Keep your Doctor and Appointment views as they are] ...
+# --- DOCTOR VIEWS ---
+class DoctorListView(generics.ListAPIView):
+    queryset = Doctor.objects.all()
+    serializer_class = DoctorSerializer
 
-# This ViewSet handles the dynamic Registration logic
+# --- APPOINTMENT VIEWS ---
+class AppointmentListCreateView(generics.ListCreateAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+
+class AppointmentDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+
+# --- PATIENT & REGISTRATION VIEWS ---
 class PatientViewSet(viewsets.ModelViewSet):
     queryset = Patient.objects.all()
     serializer_class = PatientSerializer
@@ -21,7 +33,6 @@ class PatientViewSet(viewsets.ModelViewSet):
             return Response({"error": "Name and password are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         # 2. Create the actual Django User for login
-        # This allows the /api/token/ endpoint to find this user later
         if not User.objects.filter(username=name).exists():
             User.objects.create_user(username=name, password=password)
         
@@ -29,7 +40,6 @@ class PatientViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def get_permissions(self):
-        # Allow anyone to register, but protect the patient list
         if self.action == 'create':
             return [AllowAny()]
         return super().get_permissions()
