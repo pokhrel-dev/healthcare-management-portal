@@ -99,7 +99,10 @@ SIMPLE_JWT = {
 
 # 7. CORS & OTHER CONFIG
 CORS_ALLOW_METHODS = ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
-CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://healthcare-portal-frontend-pradeep.s3-website-us-east-1.amazonaws.com"
+]
 CORS_ALLOW_ALL_ORIGINS = True 
 
 AUTH_PASSWORD_VALIDATORS = [
