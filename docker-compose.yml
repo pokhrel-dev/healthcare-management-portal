@@ -19,17 +19,18 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Install Dependencies
+    - name: Install Backend Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r backend/requirements.txt
+        pip install python-dotenv
 
-    - name: Download AWS RDS SSL Certificate
-      # AWS RDS requires this for secure encrypted connections
+    - name: Inject AWS RDS SSL Certificate
+      # This file is required for secure connections to AWS RDS but is not kept in Git
       run: curl -s https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem -o backend/global-bundle.pem
 
-    - name: Run Cloud Database Migrations
-      # This step maps GitHub Secrets to Environment Variables
+    - name: Verify Cloud Database Connection
+      # Explicitly mapping GitHub secrets to environment variables to avoid 'localhost' fallbacks
       env:
         DB_NAME: ${{ secrets.DB_NAME }}
         DB_USER: ${{ secrets.DB_USER }}
